@@ -1,0 +1,148 @@
+# Laravel Model Doc Generator
+
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/triquang/laravel-model-doc.svg?style=flat-square)](https://packagist.org/packages/triquang/laravel-model-doc)
+[![Total Downloads](https://img.shields.io/packagist/dt/triquang/laravel-model-doc.svg?style=flat-square)](https://packagist.org/packages/triquang/laravel-model-doc)
+[![License](https://img.shields.io/github/license/triquang/laravel-model-doc.svg?style=flat-square)](LICENSE)
+
+A Laravel Artisan command that generates PHPDoc blocks for your Eloquent models based on your database schema and relationships.
+
+> Example:
+```php
+/**
+ * @table users
+ * @property  bigint    int     $id
+ * @property  varchar   string  $name
+ * @property  timestamp Carbon  $created_at
+ * @property  timestamp Carbon  $updated_at
+ * @property-read Collection|Post[] $posts
+ */
+```
+
+---
+
+## 🚀 Features
+
+- Generate `@property` based on SQL column types.
+- Detect `@property-read` from relationships.
+- Support models in:
+  - `app/Models`
+  - `Modules/*/app/Models` (modular structure)
+- Sort by:
+  - PHP type (default)
+  - Property name
+  - DB type
+- Supports multiple DB drivers: MySQL, PostgreSQL, SQLite, SQL Server, Oracle.
+
+---
+
+## 📦 Installation
+
+This package is intended for development only.  
+Please install it using the `--dev` flag:
+
+Install via Composer:
+
+```bash
+composer require triquang/laravel-model-doc --dev
+```
+
+---
+
+## ⚙️ Usage
+
+Run the Artisan command:
+
+```bash
+php artisan gen:model-doc [options]
+```
+
+### Options
+
+| Option         | Description |
+|----------------|-------------|
+| `--model`      | Only process a specific model (FQCN). Example: `App\\Models\\User`.  |
+| `--dry-run`    | Show output to screen without modifying files.                       |
+| `--sort`       | Sort by: `type` (PHP type), `name`, or `db` (PHP + DB + name).       |
+| `--ns`         | Select namespaces to scan. Example: `App\\Domain\\Models`.           |
+
+---
+
+## 🧠 How It Works
+
+- Reads model classes from `app/Models` and `Modules/*/app/Models` or from namespaces
+- Uses DB schema to map SQL types → PHP types
+- Detects Eloquent relationships (e.g., `hasMany`, `belongsTo`)
+- Writes `/** ... */` docblock directly under `<?php` in model file
+
+---
+
+## 🧪 Examples
+
+### Generate all model docs:
+
+```bash
+php artisan gen:model-doc
+```
+
+### Generate for a specific model:
+
+```bash
+php artisan gen:model-doc --model=App\\Models\\User
+```
+
+### Dry-run mode (preview only):
+
+```bash
+php artisan gen:model-doc --dry-run
+```
+
+### Scan custom namespaces only:
+
+```bash
+php artisan gen:model-doc --ns=Modules\\Quiz\\Models,App\\Models
+```
+
+> 💡 Note: Namespaces must be mapped in `composer.json` using `psr-4` autoloading. This also applies to `Modules/*/composer.json`.
+
+---
+
+## 📄 Example Output
+
+```php
+/**
+ * @table books
+ * @property  bigint     int       $id
+ * @property  varchar    string    $title
+ * @property  text       string    $summary
+ * @property  timestamp  Carbon    $published_at
+ * @property-read Author           $author
+ * @property-read Collection|Tag[] $tags
+ */
+```
+
+---
+
+## ✅ Requirements
+
+- PHP >= 8.0
+- Laravel 11 / 12
+- Composer
+
+---
+
+## 📄 License
+
+MIT © [Nguyễn Trí Quang](mailto:ntquangkk@gmail.com)
+
+---
+
+## 🙌 Contributing
+
+PRs are welcome! Feel free to improve functionality or report issues via GitHub Issues.
+
+---
+
+## 📬 Contact
+
+- GitHub: [github.com/ntquangkk](https://github.com/ntquangkk)
+- Email: [ntquangkk@gmail.com](mailto:ntquangkk@gmail.com)

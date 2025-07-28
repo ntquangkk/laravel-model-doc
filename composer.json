@@ -1,0 +1,30 @@
+{
+  "name": "triquang/laravel-model-doc",
+  "description": "A Laravel package to generate PHPDoc for Laravel models (@property varchar string $name...)",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Nguyễn Trí Quang",
+      "email": "ntquangkk@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^8.0",
+    "illuminate/support": "^11.0||^12.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "TriQuang\\LaravelModelDoc\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "TriQuang\\LaravelModelDoc\\LaravelModelDocServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
