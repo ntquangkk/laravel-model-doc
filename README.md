@@ -2,7 +2,7 @@
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/triquang/laravel-model-doc.svg?style=flat-square)](https://packagist.org/packages/triquang/laravel-model-doc)
 [![Total Downloads](https://img.shields.io/packagist/dt/triquang/laravel-model-doc.svg?style=flat-square)](https://packagist.org/packages/triquang/laravel-model-doc)
-[![License](https://img.shields.io/github/license/triquang/laravel-model-doc.svg?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/packagist/l/triquang/laravel-model-doc.svg?style=flat-square)](https://github.com/ntquangkk/laravel-model-doc?tab=MIT-1-ov-file)
 
 A Laravel Artisan command that generates PHPDoc blocks for your Eloquent models based on your database schema and relationships.
 
@@ -63,7 +63,7 @@ php artisan gen:model-doc [options]
 | `--model`      | Only process a specific model (FQCN). Example: `App\\Models\\User`.  |
 | `--dry-run`    | Show output to screen without modifying files.                       |
 | `--sort`       | Sort by: `type` (PHP type), `name`, or `db` (PHP + DB + name).       |
-| `--ns`         | Select namespaces to scan. Example: `App\\Domain\\Models`.           |
+| `--ns`         | Select namespaces to scan. Example: `Modules\\Domain\\Models`.       |
 
 ---
 
@@ -78,28 +78,28 @@ php artisan gen:model-doc [options]
 
 ## 🧪 Examples
 
-### Generate all model docs:
+#### Generate all model docs:
 
 ```bash
 php artisan gen:model-doc
 ```
 
-### Generate for a specific model:
+#### Dry-run mode (preview only):
+
+```bash
+php artisan gen:model-doc --dry-run --sort=db
+```
+
+#### Generate for a specific model:
 
 ```bash
 php artisan gen:model-doc --model=App\\Models\\User
 ```
 
-### Dry-run mode (preview only):
+#### Scan custom namespaces only:
 
 ```bash
-php artisan gen:model-doc --dry-run
-```
-
-### Scan custom namespaces only:
-
-```bash
-php artisan gen:model-doc --ns=Modules\\Quiz\\Models,App\\Models
+php artisan gen:model-doc --ns=App\\Models,Modules\\Quiz\\Models
 ```
 
 > 💡 Note: Namespaces must be mapped in `composer.json` using `psr-4` autoloading. This also applies to `Modules/*/composer.json`.

@@ -1,6 +1,7 @@
 {
   "name": "triquang/laravel-model-doc",
-  "description": "A Laravel package to generate PHPDoc for Laravel models (@property varchar string $name...)",
+  "description": "Generates PHPDoc annotations (@property, etc.) for Eloquent models, supporting both standard and modular Laravel applications.",
+  "version": "1.0.1",
   "type": "library",
   "license": "MIT",
   "authors": [
@@ -25,6 +26,18 @@
       ]
     }
   },
+  "keywords": [
+    "laravel",
+    "module",
+    "modular",
+    "model",
+    "property",
+    "docblock",
+    "phpdoc",
+    "PHPdoc",
+    "annotation",
+    "generator"
+  ],
   "minimum-stability": "stable",
   "prefer-stable": true
 }
