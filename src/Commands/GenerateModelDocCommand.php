@@ -154,12 +154,17 @@ class GenerateModelDocCommand extends Command
             }
 
             $props = [];
-            foreach ($columnTypes as $name => $sql) {
-                $php = $this->shortType($this->mapToPhpType($sql));
+            foreach ($columnTypes as $name => $info) {
+                $php = $this->shortType($this->mapToPhpType($info['type']));
+                $description = $info['comment'] ?? 'No description';
+                if (!empty($info['enum_values'])) {
+                    $description = "{" . implode(', ', $info['enum_values']) . "}";
+                }
                 $props[] = [
                     'name' => $name,
-                    'sql' => $sql,
+                    'sql' => $info['type'],
                     'php' => $php,
+                    'description' => $description,
                 ];
             }
 
@@ -206,14 +211,17 @@ class GenerateModelDocCommand extends Command
                     break;
             }
 
-            $maxSql = max(array_map(fn ($p) => strlen($p['sql']), $props));
+            $maxName = max(array_map(fn ($p) => strlen($p['name']), $props));
             $maxPhp = max(array_map(fn ($p) => strlen($p['php']), $props));
+            $maxSql = max(array_map(fn ($p) => strlen($p['sql']), $props));
+            $maxDesc = max(array_map(fn ($p) => strlen($p['description'] ?: 'No description'), $props));
 
             $doc = [];
             $doc[] = '/**';
             $doc[] = " * @table {$table}";
             foreach ($props as $p) {
-                $doc[] = sprintf(" * @property  %-{$maxSql}s  %-{$maxPhp}s  \$%s", $p['sql'], $p['php'], $p['name']);
+                $desc = $p['description'] ?: 'No description';
+                $doc[] = sprintf(" * @property  %-{$maxPhp}s  \$%-{$maxName}s  %-{$maxSql}s  %s", $p['php'], $p['name'], $p['sql'], $desc);
             }
 
             // Add relationships
@@ -227,7 +235,7 @@ class GenerateModelDocCommand extends Command
 
             if ($this->option('dry-run')) {
                 $this->line("📄 {$bareName} (preview):\n{$docBlock}");
-            } else {
+           } else {
                 $this->writeDocBlock($filePath, $docBlock);
                 $this->info("✨ Updated: {$bareName}");
             }
@@ -287,44 +295,83 @@ class GenerateModelDocCommand extends Command
         try {
             switch ($driver) {
                 case 'mysql':
-                    $results = DB::select('SELECT COLUMN_NAME, DATA_TYPE FROM information_schema.columns WHERE table_name = ? AND table_schema = ?', [$table, DB::getDatabaseName()]);
+                    $results = DB::select('SELECT COLUMN_NAME, DATA_TYPE, COLUMN_TYPE, COLUMN_COMMENT FROM information_schema.columns WHERE table_name = ? AND table_schema = ?', [$table, DB::getDatabaseName()]);
                     foreach ($results as $r) {
-                        $columns[$r->COLUMN_NAME] = strtolower($r->DATA_TYPE);
+                        $enumValues = [];
+                        if (str_contains(strtolower($r->DATA_TYPE), 'enum')) {
+                            preg_match("/enum\((.*?)\)/i", $r->COLUMN_TYPE, $matches);
+                            if (!empty($matches[1])) {
+                                $enumValues = array_map(fn($v) => trim($v, "'"), explode(',', $matches[1]));
+                            }
+                        }
+                        $columns[$r->COLUMN_NAME] = [
+                            'type' => strtolower($r->DATA_TYPE),
+                            'comment' => $r->COLUMN_COMMENT,
+                            'enum_values' => $enumValues,
+                        ];
                     }
                     break;
                 case 'pgsql':
-                    $results = DB::select('SELECT column_name, data_type FROM information_schema.columns WHERE table_name = ? AND table_schema = current_schema()', [$table]);
+                    $results = DB::select('SELECT column_name, data_type, col_description((SELECT oid FROM pg_class WHERE relname = ?), ordinal_position) AS column_comment, udt_name FROM information_schema.columns WHERE table_name = ? AND table_schema = current_schema()', [$table, $table]);
                     foreach ($results as $r) {
-                        $columns[$r->column_name] = strtolower($r->data_type);
+                        $enumValues = [];
+                        if ($r->data_type === 'USER-DEFINED' && strpos($r->udt_name, 'enum_') === 0) {
+                            $enumResults = DB::select('SELECT enumlabel FROM pg_enum WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = ?)', [$r->udt_name]);
+                            $enumValues = array_column($enumResults, 'enumlabel');
+                        }
+                        $columns[$r->column_name] = [
+                            'type' => strtolower($r->data_type),
+                            'comment' => $r->column_comment,
+                            'enum_values' => $enumValues,
+                        ];
                     }
                     break;
                 case 'sqlite':
                     $results = DB::select("PRAGMA table_info('$table')");
                     foreach ($results as $r) {
-                        $columns[$r->name] = strtolower($r->type);
+                        $enumValues = [];
+                        // SQLite doesn't support ENUM natively, but we can check constraints
+                        $columns[$r->name] = [
+                            'type' => strtolower($r->type),
+                            'comment' => null,
+                            'enum_values' => $enumValues,
+                        ];
                     }
                     break;
                 case 'sqlsrv':
-                    $results = DB::select('SELECT COLUMN_NAME, DATA_TYPE FROM information_schema.columns WHERE table_name = ?', [$table]);
+                    $results = DB::select('SELECT COLUMN_NAME, DATA_TYPE, (SELECT value FROM sys.extended_properties WHERE major_id = OBJECT_ID(?) AND minor_id = COL_LENGTH(?, COLUMN_NAME)) AS COLUMN_COMMENT FROM information_schema.columns WHERE table_name = ?', [$table, $table, $table]);
                     foreach ($results as $r) {
-                        $columns[$r->COLUMN_NAME] = strtolower($r->DATA_TYPE);
+                        $columns[$r->COLUMN_NAME] = [
+                            'type' => strtolower($r->DATA_TYPE),
+                            'comment' => $r->COLUMN_COMMENT,
+                            'enum_values' => [], // SQL Server doesn't support ENUM natively
+                        ];
                     }
                     break;
                 case 'oci':
-                    $results = DB::select('SELECT COLUMN_NAME, DATA_TYPE FROM USER_TAB_COLUMNS WHERE TABLE_NAME = ?', [strtoupper($table)]);
+                    $results = DB::select('SELECT COLUMN_NAME, DATA_TYPE, (SELECT COMMENTS FROM USER_COL_COMMENTS WHERE TABLE_NAME = ? AND COLUMN_NAME = t.COLUMN_NAME) AS COLUMN_COMMENT FROM USER_TAB_COLUMNS t WHERE TABLE_NAME = ?', [strtoupper($table), strtoupper($table)]);
                     foreach ($results as $r) {
-                        $columns[$r->COLUMN_NAME] = strtolower($r->DATA_TYPE);
+                        $columns[$r->COLUMN_NAME] = [
+                            'type' => strtolower($r->DATA_TYPE),
+                            'comment' => $r->COLUMN_COMMENT,
+                            'enum_values' => [], // Oracle doesn't support ENUM natively
+                        ];
                     }
                     break;
                 default:
                     $this->warn("⚠️ Unsupported driver: {$driver}. Using Schema fallback.");
                     $colNames = Schema::getColumnListing($table);
                     foreach ($colNames as $col) {
-                        $columns[$col] = Schema::getColumnType($table, $col);
+                        $columns[$col] = [
+                            'type' => Schema::getColumnType($table, $col),
+                            'comment' => null,
+                            'enum_values' => [],
+                        ];
                     }
             }
         } catch (\Throwable $e) {
             $this->error("❌ Failed to get columns for table '{$table}': {$e->getMessage()}");
+            return [];
         }
 
         return $columns;

@@ -1,7 +1,7 @@
 {
   "name": "triquang/laravel-model-doc",
   "description": "Generates PHPDoc annotations (@property, etc.) for Eloquent models, supporting both standard and modular Laravel applications.",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "library",
   "license": "MIT",
   "authors": [

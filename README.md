@@ -9,12 +9,14 @@ A Laravel Artisan command that generates PHPDoc blocks for your Eloquent models 
 > Example:
 ```php
 /**
- * @table users
- * @property  bigint    int     $id
- * @property  varchar   string  $name
- * @property  timestamp Carbon  $created_at
- * @property  timestamp Carbon  $updated_at
- * @property-read Collection|Post[] $posts
+ * @table quizzes
+ * @property  int     $id           bigint     No description
+ * @property  string  $description  text       No description
+ * @property  string  $level        enum       {easy, medium, difficult}
+ * @property  string  $title        varchar    No description
+ * @property  Carbon  $created_at   timestamp  No description
+ * @property  Carbon  $updated_at   timestamp  No description
+ * @property-read Collection|QuizQuestion[] $questions
  */
 ```
 
@@ -111,12 +113,16 @@ php artisan gen:model-doc --ns=App\\Models,Modules\\Quiz\\Models
 ```php
 /**
  * @table books
- * @property  bigint     int       $id
- * @property  varchar    string    $title
- * @property  text       string    $summary
- * @property  timestamp  Carbon    $published_at
- * @property-read Author           $author
+ * @property  int     $id             bigint      No description
+ * @property  string  $title          varchar     The title of the book
+ * @property  string  $description    text        A detailed description of the book
+ * @property  string  $status         enum        {draft, published, archived}
+ * @property  Carbon  $publish_date   date        No description
+ * @property  Carbon  $created_at     timestamp   No description
+ * @property  Carbon  $updated_at     timestamp   No description
+ * @property-read Author $author
  * @property-read Collection|Tag[] $tags
+ * @property-read Collection|Review[] $reviews
  */
 ```
 
